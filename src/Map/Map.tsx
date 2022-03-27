@@ -8,7 +8,7 @@ export function Map() {
   const [viewPort, setViewPort] = React.useState<TViewPort>();
 
   const debouncedSetViewPort = React.useCallback(
-    debounce(setViewPort, 500),
+    debounce(setViewPort, 400),
     []
   );
 

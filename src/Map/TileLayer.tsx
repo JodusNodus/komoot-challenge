@@ -2,9 +2,12 @@ import throttle from "lodash.throttle";
 import React from "react";
 import styled from "styled-components";
 import { Draggable, TViewPort } from "./Draggable";
+import { bound } from "./utilts";
 
 export function TileLayer({ viewPort }: { viewPort: TViewPort }) {
-  const zoom = 4;
+  const mapTilesFit = Math.floor(viewPort.mapSize * viewPort.scale) / 256;
+  const zoom = Math.ceil(Math.log2(mapTilesFit - 3));
+
   const divider = Math.pow(2, zoom);
   const size = viewPort.mapSize / divider;
 
@@ -56,6 +59,3 @@ const TileImg = styled.img`
   top: 0;
   left: 0;
 `;
-
-const bound = (value: number, lower: number, upper: number) =>
-  Math.min(Math.max(value, lower), upper);

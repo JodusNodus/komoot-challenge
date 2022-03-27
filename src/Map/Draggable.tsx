@@ -1,5 +1,6 @@
 import React, { MouseEventHandler, ReactChild, WheelEventHandler } from "react";
 import styled from "styled-components";
+import { bound } from "./utilts";
 
 type TProps = {
   onViewPortChange: (viewport: TViewPort) => void;
@@ -12,20 +13,22 @@ export type TViewPort = {
   height: number;
   width: number;
   mapSize: number;
+  scale: number;
 };
 
+const MIN_SCALE = 0.01;
+const MAP_SIZE = Math.pow(2, 18);
+const MAX_SCALE = 20;
+
 export function Draggable(props: TProps) {
-  const mapSize = React.useMemo(
-    () => Math.max(window.innerWidth, window.innerHeight) * 2,
-    []
-  );
+  const mapSize = React.useMemo(() => MAP_SIZE, []);
   const isMouseDown = React.useRef(false);
 
   const diffs = React.useRef({ x: 0, y: 0 });
   const transforms = React.useRef({
-    x: window.innerWidth / 2 - mapSize / 2,
-    y: window.innerHeight / 2 - mapSize / 2,
-    scale: 2,
+    x: window.innerWidth / 2 - (mapSize * MIN_SCALE) / 2,
+    y: window.innerHeight / 2 - (mapSize * MIN_SCALE) / 2,
+    scale: MIN_SCALE,
   });
 
   const onMouseDown: MouseEventHandler = (event) => {
@@ -43,36 +46,38 @@ export function Draggable(props: TProps) {
     }
   };
 
-  function updateTransform(el: HTMLDivElement) {
-    const { x, y, scale } = transforms.current;
-    el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+  const updateTransform = (el: HTMLDivElement) =>
+    window.requestAnimationFrame(() => {
+      const { x, y, scale } = transforms.current;
+      el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
 
-    const rect = el.getBoundingClientRect().toJSON();
-    rect.x /= scale;
-    rect.y /= scale;
-    rect.height /= scale;
-    rect.width /= scale;
-    rect.right /= scale;
-    rect.bottom /= scale;
+      const rect = el.getBoundingClientRect().toJSON();
+      rect.x /= scale;
+      rect.y /= scale;
+      rect.height /= scale;
+      rect.width /= scale;
+      rect.right /= scale;
+      rect.bottom /= scale;
 
-    const viewPortX = Math.max(-rect.x, 0);
-    const viewPortY = Math.max(-rect.y, 0);
+      const viewPortX = Math.max(-rect.x, 0);
+      const viewPortY = Math.max(-rect.y, 0);
 
-    const viewPortHeight =
-      Math.min(rect.bottom, window.innerHeight / scale) - Math.max(rect.y, 0);
-    const viewPortWidth =
-      Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
+      const viewPortHeight =
+        Math.min(rect.bottom, window.innerHeight / scale) - Math.max(rect.y, 0);
+      const viewPortWidth =
+        Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
 
-    const viewport = {
-      x: viewPortX,
-      y: viewPortY,
-      height: viewPortHeight,
-      width: viewPortWidth,
-      mapSize,
-    };
+      const viewport = {
+        x: viewPortX,
+        y: viewPortY,
+        height: viewPortHeight,
+        width: viewPortWidth,
+        mapSize,
+        scale,
+      };
 
-    props.onViewPortChange(viewport);
-  }
+      props.onViewPortChange(viewport);
+    });
 
   const onDragStart: MouseEventHandler = () => {
     return false;
@@ -88,14 +93,18 @@ export function Draggable(props: TProps) {
       const x = event.clientX;
       const y = event.clientY;
       const speed = 1.03;
-      const amount = event.deltaY > 0 ? speed : 1 / speed;
-      if (transforms.current.scale * amount < 0.5) {
-        return;
-      }
+      const wheelDelta = event.deltaY > 0 ? speed : 1 / speed;
 
-      transforms.current.scale *= amount;
-      transforms.current.x = x - (x - transforms.current.x) * amount;
-      transforms.current.y = y - (y - transforms.current.y) * amount;
+      const newScale = bound(
+        transforms.current.scale * wheelDelta,
+        MIN_SCALE,
+        MAX_SCALE
+      );
+      const diff = newScale / transforms.current.scale;
+
+      transforms.current.scale *= diff;
+      transforms.current.x = x - (x - transforms.current.x) * diff;
+      transforms.current.y = y - (y - transforms.current.y) * diff;
 
       updateTransform(el);
     }
