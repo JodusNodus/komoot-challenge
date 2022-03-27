@@ -4,8 +4,10 @@ import styled from "styled-components";
 import { Draggable, TViewPort } from "./Draggable";
 import { bound } from "./utilts";
 
+const TILE_SIZE = 256;
+
 export function TileLayer({ viewPort }: { viewPort: TViewPort }) {
-  const mapTilesFit = Math.floor(viewPort.mapSize * viewPort.scale) / 256;
+  const mapTilesFit = Math.floor(viewPort.mapSize * viewPort.scale) / TILE_SIZE;
   const zoom = Math.ceil(Math.log2(mapTilesFit - 3));
 
   const divider = Math.pow(2, zoom);
@@ -38,9 +40,11 @@ export function TileLayer({ viewPort }: { viewPort: TViewPort }) {
         <TileImg
           key={path}
           style={{
-            height: size,
-            width: size,
-            transform: `translate(${x * size}px, ${y * size}px)`,
+            height: TILE_SIZE,
+            width: TILE_SIZE,
+            transform: `translate(${x * size}px, ${y * size}px) scale(${
+              size / TILE_SIZE
+            })`,
           }}
           loading="lazy"
           draggable="false"
@@ -56,6 +60,7 @@ export function TileLayer({ viewPort }: { viewPort: TViewPort }) {
 const TileImg = styled.img`
   user-select: none;
   position: absolute;
+  transform-origin: 0 0;
   top: 0;
   left: 0;
 `;
