@@ -7,7 +7,7 @@ const TILE_SIZE = 256;
 
 export function TileLayer({ viewPort }: { viewPort: TViewPort }) {
   const mapTilesFit = Math.floor(viewPort.mapSize * viewPort.scale) / TILE_SIZE;
-  const zoom = Math.ceil(Math.log2(mapTilesFit - 3));
+  const zoom = bound(Math.ceil(Math.log2(mapTilesFit - 3)), 4, 18);
 
   const divider = Math.pow(2, zoom);
   const size = viewPort.mapSize / divider;

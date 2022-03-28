@@ -8,7 +8,11 @@ export function Map() {
   const [viewPort, setViewPort] = React.useState<TViewPort>();
 
   const debouncedSetViewPort = React.useCallback(
-    debounce(setViewPort, 400),
+    debounce(
+      (viewport: TViewPort) =>
+        window.requestAnimationFrame(() => setViewPort(viewport)),
+      300
+    ),
     []
   );
 
