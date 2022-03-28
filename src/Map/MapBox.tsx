@@ -1,10 +1,10 @@
-import React, { MouseEventHandler, ReactChild, WheelEventHandler } from "react";
+import React, { MouseEventHandler, WheelEventHandler } from "react";
 import styled from "styled-components";
-import { bound } from "./utilts";
+import { bound } from "./utils";
 
 type TProps = {
   onViewPortChange: (viewport: TViewPort) => void;
-  children?: ReactChild;
+  children?: React.ReactNode;
 };
 
 export type TViewPort = {
@@ -18,9 +18,9 @@ export type TViewPort = {
 
 const MIN_SCALE = 0.01;
 const MAP_SIZE = Math.pow(2, 18);
-const MAX_SCALE = 20;
+const MAX_SCALE = 50;
 
-export function Draggable(props: TProps) {
+export function MapBox(props: TProps) {
   const mapSize = React.useMemo(() => MAP_SIZE, []);
   const isMouseDown = React.useRef(false);
 
@@ -116,22 +116,30 @@ export function Draggable(props: TProps) {
   }, [wrapRef.current]);
 
   return (
-    <Wrap
-      onMouseDown={onMouseDown}
-      onMouseUp={onMouseUp}
-      onMouseMove={onMouseMove}
-      onDragStart={onDragStart}
-      onDragEnd={onMouseUp}
-      onWheel={handleWheel}
-      style={{ height: mapSize, width: mapSize }}
-      ref={wrapRef}
-    >
-      {props.children}
-    </Wrap>
+    <Window>
+      <MovableBox
+        onMouseDown={onMouseDown}
+        onMouseUp={onMouseUp}
+        onMouseMove={onMouseMove}
+        onDragStart={onDragStart}
+        onDragEnd={onMouseUp}
+        onWheel={handleWheel}
+        style={{ height: mapSize, width: mapSize }}
+        ref={wrapRef}
+      >
+        {props.children}
+      </MovableBox>
+    </Window>
   );
 }
 
-const Wrap = styled.div`
+const Window = styled.div`
+  height: 100%;
+  width: 100%;
+  position: relative;
+`;
+
+const MovableBox = styled.div`
   display: flex;
   flex-wrap: wrap;
   position: absolute;

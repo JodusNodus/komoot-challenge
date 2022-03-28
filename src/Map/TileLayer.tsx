@@ -1,8 +1,7 @@
-import throttle from "lodash.throttle";
 import React from "react";
 import styled from "styled-components";
-import { Draggable, TViewPort } from "./Draggable";
-import { bound } from "./utilts";
+import { TViewPort } from "./MapBox";
+import { bound } from "./utils";
 
 const TILE_SIZE = 256;
 

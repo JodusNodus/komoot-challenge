@@ -1,7 +1,7 @@
 import debounce from "lodash.debounce";
 import React from "react";
 import styled from "styled-components";
-import { Draggable, TViewPort } from "./Draggable";
+import { MapBox, TViewPort } from "./MapBox";
 import { TileLayer } from "./TileLayer";
 
 export function Map() {
@@ -13,16 +13,8 @@ export function Map() {
   );
 
   return (
-    <Window>
-      <Draggable onViewPortChange={debouncedSetViewPort}>
-        {viewPort && <TileLayer viewPort={viewPort} />}
-      </Draggable>
-    </Window>
+    <MapBox onViewPortChange={debouncedSetViewPort}>
+      {viewPort && <TileLayer viewPort={viewPort} />}
+    </MapBox>
   );
 }
-
-const Window = styled.div`
-  height: 100%;
-  width: 100%;
-  position: relative;
-`;
