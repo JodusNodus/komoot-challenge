@@ -30,7 +30,7 @@ export function RouteLayer({
       return [x, y] as TPoint;
     });
 
-    const simplifiedPoints = projectedPoints.reduce((acc, point, index) => {
+    let simplifiedPoints = projectedPoints.reduce((acc, point, index) => {
       if (index === 0) return [{ point, index }];
       if (
         distanceBetweenPoints(point, acc[acc.length - 1].point) >
@@ -41,6 +41,13 @@ export function RouteLayer({
         return acc;
       }
     }, [] as TPointWithIndex[]);
+    // Always keep firsts and last point in simplified points
+    simplifiedPoints = simplifiedPoints
+      .slice(0, simplifiedPoints.length - 1)
+      .concat({
+        index: projectedPoints.length - 1,
+        point: projectedPoints[projectedPoints.length - 1],
+      });
 
     for (let i = 0; i < simplifiedPoints.length - 1; i++) {
       drawLine(ctx, simplifiedPoints[i].point, simplifiedPoints[i + 1].point);
@@ -50,7 +57,14 @@ export function RouteLayer({
       index,
       point: [x, y],
     } of simplifiedPoints) {
-      drawPoint(ctx, x, y, index + 1);
+      let label = (index + 1).toString();
+      if (index === 0) {
+        label = "A";
+      }
+      if (index === projectedPoints.length - 1) {
+        label = "B";
+      }
+      drawPoint(ctx, x, y, label);
     }
   };
 
@@ -78,7 +92,7 @@ function drawPoint(
   ctx: CanvasRenderingContext2D,
   x: number,
   y: number,
-  pointNumber: number
+  label: string
 ) {
   ctx.beginPath();
   ctx.arc(x, y, POINT_RADIUS, 0, 2 * Math.PI, false);
@@ -89,7 +103,7 @@ function drawPoint(
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.fillText(pointNumber.toString(), x, y);
+  ctx.fillText(label, x, y);
 }
 
 function drawLine(ctx: CanvasRenderingContext2D, p1: TPoint, p2: TPoint) {
