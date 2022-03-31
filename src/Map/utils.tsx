@@ -29,3 +29,9 @@ export function latLngToXy(
   const y = mapHeight / 2 - (mapWidth * mercN) / (2 * Math.PI);
   return [x, y];
 }
+
+export function distanceBetweenPoints(p1: TPoint, p2: TPoint) {
+  let x = p2[0] - p1[0];
+  let y = p2[1] - p1[1];
+  return Math.sqrt(y * y + x * x);
+}

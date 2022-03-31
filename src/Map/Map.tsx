@@ -8,9 +8,7 @@ import { TPoint } from "./types";
 import { xyToLatLngOG } from "./utils";
 
 const ROUTE_POINTS = ROUTE.features.flatMap((feature) =>
-  feature.geometry.coordinates
-    .map(([lng, lat]) => [lat, lng] as TPoint)
-    .filter((x, i) => i % 100 === 0)
+  feature.geometry.coordinates.map(([lng, lat]) => [lat, lng] as TPoint)
 );
 
 export function Map() {
