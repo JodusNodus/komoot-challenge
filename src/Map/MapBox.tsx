@@ -4,6 +4,7 @@ import { bound } from "./utils";
 
 type TProps = {
   onViewPortChange: (viewport: TViewPort) => void;
+  onClick: (x: number, y: number, viewport: TViewPort) => void;
   children?: React.ReactNode;
 };
 
@@ -23,6 +24,7 @@ const MAX_SCALE = 50;
 export function MapBox(props: TProps) {
   const mapSize = React.useMemo(() => MAP_SIZE, []);
   const isMouseDown = React.useRef(false);
+  const isMouseMoving = React.useRef(false);
 
   const diffs = React.useRef({ x: 0, y: 0 });
   const transforms = React.useRef({
@@ -30,6 +32,7 @@ export function MapBox(props: TProps) {
     y: window.innerHeight / 2 - (mapSize * MIN_SCALE) / 2,
     scale: MIN_SCALE,
   });
+  const viewPort = React.useRef<TViewPort>();
 
   const onMouseDown: MouseEventHandler = (event) => {
     diffs.current.x = event.clientX - transforms.current.x;
@@ -39,10 +42,16 @@ export function MapBox(props: TProps) {
 
   const onMouseMove: MouseEventHandler = function (event) {
     const el = event.currentTarget as HTMLDivElement;
+
     if (isMouseDown.current) {
-      transforms.current.x = event.pageX - diffs.current.x;
-      transforms.current.y = event.pageY - diffs.current.y;
-      updateTransform(el);
+      const newX = event.clientX - diffs.current.x;
+      const newY = event.clientY - diffs.current.y;
+      if (newX !== transforms.current.x || newY !== transforms.current.y) {
+        transforms.current.x = newX;
+        transforms.current.y = newY;
+        isMouseMoving.current = true;
+        updateTransform(el);
+      }
     }
   };
 
@@ -67,7 +76,7 @@ export function MapBox(props: TProps) {
       const viewPortWidth =
         Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
 
-      const viewport = {
+      viewPort.current = {
         x: viewPortX,
         y: viewPortY,
         height: viewPortHeight,
@@ -76,14 +85,27 @@ export function MapBox(props: TProps) {
         scale,
       };
 
-      props.onViewPortChange(viewport);
+      props.onViewPortChange(viewPort.current);
     });
 
   const onDragStart: MouseEventHandler = () => {
     return false;
   };
 
-  const onMouseUp: MouseEventHandler = () => {
+  const onClick: MouseEventHandler = (event) => {
+    if (viewPort.current) {
+      const inverseScale = 1 / viewPort.current.scale;
+      const x = (event.clientX - transforms.current.x) * inverseScale;
+      const y = (event.clientY - transforms.current.y) * inverseScale;
+      props.onClick(x, y, viewPort.current);
+    }
+  };
+
+  const onMouseUp: MouseEventHandler = (event) => {
+    if (!isMouseMoving.current && isMouseDown.current) {
+      onClick(event);
+    }
+    isMouseMoving.current = false;
     isMouseDown.current = false;
   };
 
