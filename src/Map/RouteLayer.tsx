@@ -1,6 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { TViewPort } from "./MapBox";
+import { useRouteData } from "./RouteDataContext";
 import { TPoint } from "./types";
 import { distanceBetweenPoints, latLngToXy } from "./utils";
 
@@ -8,13 +9,8 @@ const POINT_RADIUS = 12;
 
 type TPointWithIndex = { point: TPoint; index: number };
 
-export function RouteLayer({
-  viewPort,
-  points,
-}: {
-  viewPort: TViewPort;
-  points: TPoint[];
-}) {
+export function RouteLayer({ viewPort }: { viewPort: TViewPort }) {
+  const { points } = useRouteData();
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   const render = () => {
@@ -29,6 +25,8 @@ export function RouteLayer({
       y = y - viewPort.y * viewPort.scale;
       return [x, y] as TPoint;
     });
+
+    drawLine(ctx, projectedPoints);
 
     let simplifiedPoints = projectedPoints.reduce((acc, point, index) => {
       if (index === 0) return [{ point, index }];
@@ -48,10 +46,6 @@ export function RouteLayer({
         index: projectedPoints.length - 1,
         point: projectedPoints[projectedPoints.length - 1],
       });
-
-    for (let i = 0; i < simplifiedPoints.length - 1; i++) {
-      drawLine(ctx, simplifiedPoints[i].point, simplifiedPoints[i + 1].point);
-    }
 
     for (const {
       index,
@@ -106,11 +100,16 @@ function drawPoint(
   ctx.fillText(label, x, y);
 }
 
-function drawLine(ctx: CanvasRenderingContext2D, p1: TPoint, p2: TPoint) {
+function drawLine(ctx: CanvasRenderingContext2D, points: TPoint[]) {
   ctx.beginPath();
-  ctx.moveTo(p1[0], p1[1]);
-  ctx.lineTo(p2[0], p2[1]);
-  ctx.strokeStyle = "#1e68e8";
+  ctx.moveTo(points[0][0], points[0][1]);
+  for (let i = 1; i < points.length; i++) {
+    const p = points[i];
+    ctx.lineTo(p[0], p[1]);
+  }
+  ctx.lineCap = "round";
+  ctx.lineJoin = "round";
+  ctx.strokeStyle = "#1186e8";
   ctx.lineWidth = 5;
   ctx.stroke();
 }
