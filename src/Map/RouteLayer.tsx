@@ -14,10 +14,11 @@ export function RouteLayer({ viewPort }: { viewPort: TViewPort }) {
   const canvasRef = React.useRef<HTMLCanvasElement>(null);
 
   const render = () => {
-    if (!canvasRef.current || !points.length) return;
+    if (!canvasRef.current) return;
     const ctx = canvasRef.current.getContext("2d");
     if (!ctx) return;
     ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+    if (!points.length) return;
 
     const projectedPoints = points.map(([lat, lng]: TPoint) => {
       let [x, y] = latLngToXy(lat, lng, viewPort.mapSize * viewPort.scale);
