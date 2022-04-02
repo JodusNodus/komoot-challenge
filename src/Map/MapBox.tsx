@@ -1,3 +1,4 @@
+import debounce from "lodash.debounce";
 import React, { MouseEventHandler, WheelEventHandler } from "react";
 import styled from "styled-components";
 import { bound } from "./utils";
@@ -136,6 +137,25 @@ export function MapBox(props: TProps) {
   React.useEffect(() => {
     if (wrapRef.current) updateTransform(wrapRef.current);
   }, [wrapRef.current]);
+
+  const handleResize = React.useCallback(
+    debounce(() => {
+      if (wrapRef.current) {
+        transforms.current = {
+          x: window.innerWidth / 2 - (mapSize * MIN_SCALE) / 2,
+          y: window.innerHeight / 2 - (mapSize * MIN_SCALE) / 2,
+          scale: MIN_SCALE,
+        };
+        updateTransform(wrapRef.current);
+      }
+    }, 300),
+    []
+  );
+
+  React.useEffect(() => {
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   return (
     <Window>
