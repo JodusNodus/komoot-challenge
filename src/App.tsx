@@ -1,7 +1,7 @@
 import React from "react";
 import styled from "styled-components";
 import { Map } from "./Map/Map";
-import { Panel } from "./Panel";
+import { Panel } from "./Panel/Panel";
 
 function App() {
   return (

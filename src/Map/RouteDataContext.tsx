@@ -14,7 +14,13 @@ export const RouteDataContext = React.createContext<TRouteData>({
 export const useRouteData = () => React.useContext(RouteDataContext);
 
 const ROUTE_POINTS = ROUTE.features.flatMap((feature) =>
-  feature.geometry.coordinates.map(([lng, lat]) => [lat, lng] as TPoint)
+  Array.from(
+    new Set(
+      feature.geometry.coordinates
+        .map(([lng, lat]) => [lat, lng] as TPoint)
+        .map((x) => x.join("/"))
+    )
+  ).map((x) => x.split("/").map((x) => parseFloat(x)) as any)
 );
 
 export function RouteDataProvider({ children }: { children: React.ReactNode }) {

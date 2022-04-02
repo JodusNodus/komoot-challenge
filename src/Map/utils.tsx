@@ -35,3 +35,14 @@ export function distanceBetweenPoints(p1: TPoint, p2: TPoint) {
   let y = p2[1] - p1[1];
   return Math.sqrt(y * y + x * x);
 }
+
+export function pointIndexToLabel(index: number, totalPoints: number) {
+  let label = index.toString();
+  if (index === 0) {
+    label = "A";
+  }
+  if (index === totalPoints - 1) {
+    label = "B";
+  }
+  return label;
+}

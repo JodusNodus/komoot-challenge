@@ -3,7 +3,7 @@ import styled from "styled-components";
 import { TViewPort } from "./MapBox";
 import { useRouteData } from "./RouteDataContext";
 import { TPoint } from "./types";
-import { distanceBetweenPoints, latLngToXy } from "./utils";
+import { distanceBetweenPoints, latLngToXy, pointIndexToLabel } from "./utils";
 
 const POINT_RADIUS = 12;
 
@@ -51,14 +51,7 @@ export function RouteLayer({ viewPort }: { viewPort: TViewPort }) {
       index,
       point: [x, y],
     } of simplifiedPoints) {
-      let label = (index + 1).toString();
-      if (index === 0) {
-        label = "A";
-      }
-      if (index === projectedPoints.length - 1) {
-        label = "B";
-      }
-      drawPoint(ctx, x, y, label);
+      drawPoint(ctx, x, y, pointIndexToLabel(index, projectedPoints.length));
     }
   };
 
