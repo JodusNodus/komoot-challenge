@@ -40,8 +40,7 @@ export function pointIndexToLabel(index: number, totalPoints: number) {
   let label = index.toString();
   if (index === 0) {
     label = "A";
-  }
-  if (index === totalPoints - 1) {
+  } else if (index === totalPoints - 1) {
     label = "B";
   }
   return label;

@@ -1,10 +1,8 @@
 import debounce from "lodash.debounce";
 import React from "react";
-import { ROUTE } from "./sampleData";
 import { MapBox, TViewPort } from "./MapBox";
 import { RouteLayer } from "./RouteLayer";
 import { TileLayer } from "./TileLayer";
-import { TPoint } from "./types";
 import { xyToLatLngOG } from "./utils";
 import { useRouteData } from "./RouteDataContext";
 

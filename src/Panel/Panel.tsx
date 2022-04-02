@@ -2,6 +2,7 @@ import React from "react";
 import { MouseEvent } from "react";
 import styled from "styled-components";
 import { useRouteData } from "../Map/RouteDataContext";
+import { SAMPLE_ROUTE_COORDINATES } from "../Map/sampleData";
 import { pointIndexToLabel } from "../Map/utils";
 import { PanelWaypointItem } from "./PanelWaypointItem";
 
@@ -54,6 +55,10 @@ export function Panel() {
     return i;
   };
 
+  const handleLoadSampleRouteClick = () => {
+    setPoints(SAMPLE_ROUTE_COORDINATES);
+  };
+
   return (
     <PanelContainer>
       <Content>
@@ -73,7 +78,9 @@ export function Panel() {
         ))}
       </WayPointList>
       <Content>
-        <ImportButton>Import your route</ImportButton>
+        <ImportButton onClick={handleLoadSampleRouteClick}>
+          Load sample route
+        </ImportButton>
         <ExportButton>Download your route</ExportButton>
       </Content>
     </PanelContainer>
