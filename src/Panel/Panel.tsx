@@ -2,9 +2,10 @@ import React from "react";
 import { MouseEvent } from "react";
 import styled from "styled-components";
 import { useRouteData } from "../Map/RouteDataContext";
-import { SAMPLE_ROUTE_COORDINATES } from "../Map/sampleData";
+import { SAMPLE_ROUTE_COORDINATES } from "./sampleData";
 import { pointIndexToLabel } from "../Map/utils";
 import { PanelWaypointItem } from "./PanelWaypointItem";
+import { downloadFile, pointsToGpx } from "./export";
 
 const LIST_ITEM_HEIGHT = 50;
 
@@ -59,6 +60,10 @@ export function Panel() {
     setPoints(SAMPLE_ROUTE_COORDINATES);
   };
 
+  const handleExportClick = () => {
+    downloadFile("export.gpx", pointsToGpx(points));
+  };
+
   return (
     <PanelContainer>
       <Content>
@@ -81,7 +86,9 @@ export function Panel() {
         <ImportButton onClick={handleLoadSampleRouteClick}>
           Load sample route
         </ImportButton>
-        <ExportButton>Download your route</ExportButton>
+        <ExportButton onClick={handleExportClick}>
+          Download your route
+        </ExportButton>
       </Content>
     </PanelContainer>
   );
