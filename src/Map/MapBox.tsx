@@ -47,7 +47,7 @@ export class MapBox extends React.PureComponent<TProps> {
     this.isMouseDown = true;
   };
 
-  private onMouseMove: MouseEventHandler = (event) => {
+  private onMouseMove = (event: MouseEvent) => {
     if (this.isMouseDown) {
       const newX = event.clientX - this.mouseDownPoint.x;
       const newY = event.clientY - this.mouseDownPoint.y;
@@ -105,11 +105,7 @@ export class MapBox extends React.PureComponent<TProps> {
     this.props.onViewportChange(this.viewport);
   };
 
-  private onDragStart: MouseEventHandler = () => {
-    return false;
-  };
-
-  private onClick: MouseEventHandler = (event) => {
+  private onClick = (event: MouseEvent) => {
     if (this.viewport) {
       const inverseScale = 1 / this.viewport.scale;
       const x = (event.clientX - this.transforms.x) * inverseScale;
@@ -118,7 +114,7 @@ export class MapBox extends React.PureComponent<TProps> {
     }
   };
 
-  private onMouseUp: MouseEventHandler = (event) => {
+  private onMouseUp = (event: MouseEvent) => {
     if (!this.isMouseMoving && this.isMouseDown) {
       this.onClick(event);
     }
@@ -154,11 +150,15 @@ export class MapBox extends React.PureComponent<TProps> {
 
   componentDidMount() {
     window.addEventListener("resize", this.handleWindowResize);
+    window.addEventListener("mousemove", this.onMouseMove);
+    window.addEventListener("mouseup", this.onMouseUp);
     this.resetMap();
   }
 
   componentWillUnmount() {
     window.removeEventListener("resize", this.handleWindowResize);
+    window.removeEventListener("mousemove", this.onMouseMove);
+    window.removeEventListener("mouseup", this.onMouseUp);
   }
 
   render() {
@@ -166,13 +166,10 @@ export class MapBox extends React.PureComponent<TProps> {
       <Window>
         <MovableBox
           onMouseDown={this.onMouseDown}
-          onMouseUp={this.onMouseUp}
-          onMouseMove={this.onMouseMove}
-          onDragStart={this.onDragStart}
-          onDragEnd={this.onMouseUp}
           onWheel={this.handleWheel}
           style={{ height: MAP_SIZE, width: MAP_SIZE }}
           ref={this.wrapRef}
+          draggable="false"
         >
           {this.props.children}
         </MovableBox>
