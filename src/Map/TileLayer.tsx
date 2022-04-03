@@ -67,4 +67,6 @@ const TileImg = styled.img`
   transform-origin: 0 0;
   top: 0;
   left: 0;
+  user-select: none;
+  -webkit-user-drag: none;
 `;
