@@ -22,43 +22,54 @@ const MIN_SCALE = 0.01;
 const MAP_SIZE = Math.pow(2, 18);
 const MAX_SCALE = 50;
 
-export function MapBox(props: TProps) {
-  const mapSize = React.useMemo(() => MAP_SIZE, []);
-  const isMouseDown = React.useRef(false);
-  const isMouseMoving = React.useRef(false);
+export class MapBox extends React.PureComponent<TProps> {
+  private isMouseDown = false;
+  private isMouseMoving = false;
 
-  const diffs = React.useRef({ x: 0, y: 0 });
-  const transforms = React.useRef({
-    x: window.innerWidth / 2 - (mapSize * MIN_SCALE) / 2,
-    y: window.innerHeight / 2 - (mapSize * MIN_SCALE) / 2,
+  private diffs = { x: 0, y: 0 };
+
+  private transforms = {
+    x: 0,
+    y: 0,
     scale: MIN_SCALE,
-  });
-  const viewPort = React.useRef<TViewPort>();
-
-  const onMouseDown: MouseEventHandler = (event) => {
-    diffs.current.x = event.clientX - transforms.current.x;
-    diffs.current.y = event.clientY - transforms.current.y;
-    isMouseDown.current = true;
   };
 
-  const onMouseMove: MouseEventHandler = function (event) {
+  private viewPort?: TViewPort;
+
+  private wrapRef = React.createRef<HTMLDivElement>();
+
+  private resetMap = () => {
+    this.transforms = {
+      x: window.innerWidth / 2 - (MAP_SIZE * MIN_SCALE) / 2,
+      y: window.innerHeight / 2 - (MAP_SIZE * MIN_SCALE) / 2,
+      scale: MIN_SCALE,
+    };
+  };
+
+  private onMouseDown: MouseEventHandler = (event) => {
+    this.diffs.x = event.clientX - this.transforms.x;
+    this.diffs.y = event.clientY - this.transforms.y;
+    this.isMouseDown = true;
+  };
+
+  private onMouseMove: MouseEventHandler = (event) => {
     const el = event.currentTarget as HTMLDivElement;
 
-    if (isMouseDown.current) {
-      const newX = event.clientX - diffs.current.x;
-      const newY = event.clientY - diffs.current.y;
-      if (newX !== transforms.current.x || newY !== transforms.current.y) {
-        transforms.current.x = newX;
-        transforms.current.y = newY;
-        isMouseMoving.current = true;
-        updateTransform(el);
+    if (this.isMouseDown) {
+      const newX = event.clientX - this.diffs.x;
+      const newY = event.clientY - this.diffs.y;
+      if (newX !== this.transforms.x || newY !== this.transforms.y) {
+        this.transforms.x = newX;
+        this.transforms.y = newY;
+        this.isMouseMoving = true;
+        this.updateTransform(el);
       }
     }
   };
 
-  const updateTransform = (el: HTMLDivElement) =>
+  private updateTransform = (el: HTMLDivElement) =>
     window.requestAnimationFrame(() => {
-      const { x, y, scale } = transforms.current;
+      const { x, y, scale } = this.transforms;
       el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
 
       const rect = el.getBoundingClientRect().toJSON();
@@ -77,102 +88,102 @@ export function MapBox(props: TProps) {
       const viewPortWidth =
         Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
 
-      viewPort.current = {
+      this.viewPort = {
         x: viewPortX,
         y: viewPortY,
         height: viewPortHeight,
         width: viewPortWidth,
-        mapSize,
+        mapSize: MAP_SIZE,
         scale,
       };
 
-      props.onViewPortChange(viewPort.current);
+      this.props.onViewPortChange(this.viewPort);
     });
 
-  const onDragStart: MouseEventHandler = () => {
+  private onDragStart: MouseEventHandler = () => {
     return false;
   };
 
-  const onClick: MouseEventHandler = (event) => {
-    if (viewPort.current) {
-      const inverseScale = 1 / viewPort.current.scale;
-      const x = (event.clientX - transforms.current.x) * inverseScale;
-      const y = (event.clientY - transforms.current.y) * inverseScale;
-      props.onClick(x, y, viewPort.current);
+  private onClick: MouseEventHandler = (event) => {
+    if (this.viewPort) {
+      const inverseScale = 1 / this.viewPort.scale;
+      const x = (event.clientX - this.transforms.x) * inverseScale;
+      const y = (event.clientY - this.transforms.y) * inverseScale;
+      this.props.onClick(x, y, this.viewPort);
     }
   };
 
-  const onMouseUp: MouseEventHandler = (event) => {
-    if (!isMouseMoving.current && isMouseDown.current) {
-      onClick(event);
+  private onMouseUp: MouseEventHandler = (event) => {
+    if (!this.isMouseMoving && this.isMouseDown) {
+      this.onClick(event);
     }
-    isMouseMoving.current = false;
-    isMouseDown.current = false;
+    this.isMouseMoving = false;
+    this.isMouseDown = false;
   };
 
-  const handleWheel: WheelEventHandler = (event) => {
+  private handleWheel: WheelEventHandler = (event) => {
     const el = event.currentTarget as HTMLDivElement;
     if (el) {
       const x = event.clientX;
       const y = event.clientY;
       const speed = 1.03;
-      const wheelDelta = event.deltaY > 0 ? speed : 1 / speed;
+      const wheelDelta = event.deltaY < 0 ? speed : 1 / speed;
 
       const newScale = bound(
-        transforms.current.scale * wheelDelta,
+        this.transforms.scale * wheelDelta,
         MIN_SCALE,
         MAX_SCALE
       );
-      const diff = newScale / transforms.current.scale;
+      const diff = newScale / this.transforms.scale;
 
-      transforms.current.scale *= diff;
-      transforms.current.x = x - (x - transforms.current.x) * diff;
-      transforms.current.y = y - (y - transforms.current.y) * diff;
+      this.transforms.scale *= diff;
+      this.transforms.x = x - (x - this.transforms.x) * diff;
+      this.transforms.y = y - (y - this.transforms.y) * diff;
 
-      updateTransform(el);
+      this.updateTransform(el);
     }
   };
 
-  const wrapRef = React.useRef<HTMLDivElement>(null);
-  React.useEffect(() => {
-    if (wrapRef.current) updateTransform(wrapRef.current);
-  }, [wrapRef.current]);
+  private handleWindowResize = debounce(() => {
+    if (this.wrapRef.current) {
+      this.transforms = {
+        x: window.innerWidth / 2 - (MAP_SIZE * MIN_SCALE) / 2,
+        y: window.innerHeight / 2 - (MAP_SIZE * MIN_SCALE) / 2,
+        scale: MIN_SCALE,
+      };
+      this.updateTransform(this.wrapRef.current);
+    }
+  }, 300);
 
-  const handleResize = React.useCallback(
-    debounce(() => {
-      if (wrapRef.current) {
-        transforms.current = {
-          x: window.innerWidth / 2 - (mapSize * MIN_SCALE) / 2,
-          y: window.innerHeight / 2 - (mapSize * MIN_SCALE) / 2,
-          scale: MIN_SCALE,
-        };
-        updateTransform(wrapRef.current);
-      }
-    }, 300),
-    []
-  );
+  componentDidMount() {
+    window.addEventListener("resize", this.handleWindowResize);
 
-  React.useEffect(() => {
-    window.addEventListener("resize", handleResize);
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
+    this.resetMap();
+    if (this.wrapRef.current) this.updateTransform(this.wrapRef.current);
+  }
 
-  return (
-    <Window>
-      <MovableBox
-        onMouseDown={onMouseDown}
-        onMouseUp={onMouseUp}
-        onMouseMove={onMouseMove}
-        onDragStart={onDragStart}
-        onDragEnd={onMouseUp}
-        onWheel={handleWheel}
-        style={{ height: mapSize, width: mapSize }}
-        ref={wrapRef}
-      >
-        {props.children}
-      </MovableBox>
-    </Window>
-  );
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.handleWindowResize);
+  }
+
+  render() {
+    return (
+      <Window>
+        <MovableBox
+          onMouseDown={this.onMouseDown}
+          onMouseUp={this.onMouseUp}
+          onMouseMove={this.onMouseMove}
+          onDragStart={this.onDragStart}
+          onDragEnd={this.onMouseUp}
+          onWheel={this.handleWheel}
+          style={{ height: MAP_SIZE, width: MAP_SIZE }}
+          ref={this.wrapRef}
+        >
+          {this.props.children}
+        </MovableBox>
+      </Window>
+    );
+  }
 }
 
 const Window = styled.div`
