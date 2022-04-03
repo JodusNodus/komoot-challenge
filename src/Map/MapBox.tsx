@@ -1,8 +1,9 @@
 import debounce from "lodash.debounce";
 import React, { MouseEventHandler, WheelEventHandler } from "react";
 import styled from "styled-components";
+import { PANEL_WIDTH } from "../Panel/Panel";
 import { TViewport } from "./types";
-import { bound } from "./utils";
+import { bound, latLngToXy } from "./utils";
 
 type TProps = {
   onViewportChange: (viewport: TViewport) => void;
@@ -11,8 +12,10 @@ type TProps = {
 };
 
 const MIN_SCALE = 0.01;
+const DEFAULT_SCALE = 0.04;
 const MAP_SIZE = Math.pow(2, 18);
 const MAX_SCALE = 50;
+const KOMOOT_OFFICE = [52.3878978, 13.0582401];
 
 export class MapBox extends React.PureComponent<TProps> {
   private isMouseDown = false;
@@ -24,7 +27,7 @@ export class MapBox extends React.PureComponent<TProps> {
   private transforms = {
     x: 0,
     y: 0,
-    scale: MIN_SCALE,
+    scale: DEFAULT_SCALE,
   };
 
   // Part of map that is visible to user
@@ -33,10 +36,16 @@ export class MapBox extends React.PureComponent<TProps> {
   private wrapRef = React.createRef<HTMLDivElement>();
 
   private resetMap = () => {
+    const [x, y] = latLngToXy(
+      KOMOOT_OFFICE[0],
+      KOMOOT_OFFICE[1],
+      MAP_SIZE * DEFAULT_SCALE
+    );
+
     this.transforms = {
-      x: window.innerWidth / 2 - (MAP_SIZE * MIN_SCALE) / 2,
-      y: window.innerHeight / 2 - (MAP_SIZE * MIN_SCALE) / 2,
-      scale: MIN_SCALE,
+      x: window.innerWidth / 2 - x + PANEL_WIDTH / 2,
+      y: window.innerHeight / 2 - y,
+      scale: DEFAULT_SCALE,
     };
     this.updateTransform();
   };

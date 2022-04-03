@@ -7,6 +7,7 @@ import { pointIndexToLabel } from "../Map/utils";
 import { PanelWaypointItem } from "./PanelWaypointItem";
 import { downloadFile, pointsToGpx } from "./export";
 
+export const PANEL_WIDTH = 300;
 const LIST_ITEM_HEIGHT = 50;
 
 export function Panel() {
@@ -99,7 +100,7 @@ const PanelContainer = styled.div`
   box-sizing: border-box;
   z-index: 1;
   height: 100%;
-  width: 300px;
+  width: ${PANEL_WIDTH}px;
   background-color: #383838;
   display: flex;
   flex-direction: column;
