@@ -25,15 +25,17 @@ const MAX_SCALE = 50;
 export class MapBox extends React.PureComponent<TProps> {
   private isMouseDown = false;
   private isMouseMoving = false;
+  // Point of mousedown before dragging
+  private mouseDownPoint = { x: 0, y: 0 };
 
-  private diffs = { x: 0, y: 0 };
-
+  // Transformations for map div
   private transforms = {
     x: 0,
     y: 0,
     scale: MIN_SCALE,
   };
 
+  // Part of map that is visible to user
   private viewPort?: TViewPort;
 
   private wrapRef = React.createRef<HTMLDivElement>();
@@ -44,61 +46,72 @@ export class MapBox extends React.PureComponent<TProps> {
       y: window.innerHeight / 2 - (MAP_SIZE * MIN_SCALE) / 2,
       scale: MIN_SCALE,
     };
+    this.updateTransform();
   };
 
   private onMouseDown: MouseEventHandler = (event) => {
-    this.diffs.x = event.clientX - this.transforms.x;
-    this.diffs.y = event.clientY - this.transforms.y;
+    this.mouseDownPoint.x = event.clientX - this.transforms.x;
+    this.mouseDownPoint.y = event.clientY - this.transforms.y;
     this.isMouseDown = true;
   };
 
   private onMouseMove: MouseEventHandler = (event) => {
-    const el = event.currentTarget as HTMLDivElement;
-
     if (this.isMouseDown) {
-      const newX = event.clientX - this.diffs.x;
-      const newY = event.clientY - this.diffs.y;
+      const newX = event.clientX - this.mouseDownPoint.x;
+      const newY = event.clientY - this.mouseDownPoint.y;
       if (newX !== this.transforms.x || newY !== this.transforms.y) {
         this.transforms.x = newX;
         this.transforms.y = newY;
         this.isMouseMoving = true;
-        this.updateTransform(el);
+        this.updateTransform();
       }
     }
   };
 
-  private updateTransform = (el: HTMLDivElement) =>
+  private updateTransform = () =>
     window.requestAnimationFrame(() => {
+      const el = this.wrapRef.current;
+      if (!el) return;
+
       const { x, y, scale } = this.transforms;
       el.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
 
-      const rect = el.getBoundingClientRect().toJSON();
-      rect.x /= scale;
-      rect.y /= scale;
-      rect.height /= scale;
-      rect.width /= scale;
-      rect.right /= scale;
-      rect.bottom /= scale;
-
-      const viewPortX = Math.max(-rect.x, 0);
-      const viewPortY = Math.max(-rect.y, 0);
-
-      const viewPortHeight =
-        Math.min(rect.bottom, window.innerHeight / scale) - Math.max(rect.y, 0);
-      const viewPortWidth =
-        Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
-
-      this.viewPort = {
-        x: viewPortX,
-        y: viewPortY,
-        height: viewPortHeight,
-        width: viewPortWidth,
-        mapSize: MAP_SIZE,
-        scale,
-      };
-
-      this.props.onViewPortChange(this.viewPort);
+      this.updateViewport();
     });
+
+  private updateViewport = () => {
+    const el = this.wrapRef.current;
+    if (!el) return;
+
+    const { scale } = this.transforms;
+
+    // Adjust rect for scale
+    const rect = Object.fromEntries(
+      Object.entries(el.getBoundingClientRect().toJSON()).map(([key, val]) => [
+        key,
+        (val as number) / scale,
+      ])
+    );
+
+    const viewPortX = Math.max(-rect.x, 0);
+    const viewPortY = Math.max(-rect.y, 0);
+
+    const viewPortHeight =
+      Math.min(rect.bottom, window.innerHeight / scale) - Math.max(rect.y, 0);
+    const viewPortWidth =
+      Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
+
+    this.viewPort = {
+      x: viewPortX,
+      y: viewPortY,
+      height: viewPortHeight,
+      width: viewPortWidth,
+      mapSize: MAP_SIZE,
+      scale,
+    };
+
+    this.props.onViewPortChange(this.viewPort);
+  };
 
   private onDragStart: MouseEventHandler = () => {
     return false;
@@ -124,8 +137,6 @@ export class MapBox extends React.PureComponent<TProps> {
   private handleWheel: WheelEventHandler = (event) => {
     const el = event.currentTarget as HTMLDivElement;
     if (el) {
-      const x = event.clientX;
-      const y = event.clientY;
       const speed = 1.03;
       const wheelDelta = event.deltaY < 0 ? speed : 1 / speed;
 
@@ -137,29 +148,21 @@ export class MapBox extends React.PureComponent<TProps> {
       const diff = newScale / this.transforms.scale;
 
       this.transforms.scale *= diff;
+
+      const x = event.clientX;
+      const y = event.clientY;
       this.transforms.x = x - (x - this.transforms.x) * diff;
       this.transforms.y = y - (y - this.transforms.y) * diff;
 
-      this.updateTransform(el);
+      this.updateTransform();
     }
   };
 
-  private handleWindowResize = debounce(() => {
-    if (this.wrapRef.current) {
-      this.transforms = {
-        x: window.innerWidth / 2 - (MAP_SIZE * MIN_SCALE) / 2,
-        y: window.innerHeight / 2 - (MAP_SIZE * MIN_SCALE) / 2,
-        scale: MIN_SCALE,
-      };
-      this.updateTransform(this.wrapRef.current);
-    }
-  }, 300);
+  private handleWindowResize = debounce(this.resetMap, 300);
 
   componentDidMount() {
     window.addEventListener("resize", this.handleWindowResize);
-
     this.resetMap();
-    if (this.wrapRef.current) this.updateTransform(this.wrapRef.current);
   }
 
   componentWillUnmount() {
