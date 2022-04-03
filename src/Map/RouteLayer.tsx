@@ -1,3 +1,4 @@
+import debounce from "lodash.debounce";
 import React from "react";
 import styled from "styled-components";
 import { RouteDataContext } from "./RouteDataContext";
@@ -60,13 +61,25 @@ export class RouteLayer extends React.PureComponent<TProps> {
         }
       }
     });
+  private resizeMap = () => {
+    const canvas = this.canvasRef.current;
+    if (!canvas) return;
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+  };
+  private handleWindowResize = debounce(this.resizeMap, 300);
 
   componentDidUpdate() {
     this.drawRoute(this.props.viewport);
   }
 
   componentDidMount() {
+    window.addEventListener("resize", this.handleWindowResize);
     this.drawRoute(this.props.viewport);
+  }
+
+  componentWillUnmount() {
+    window.removeEventListener("resize", this.handleWindowResize);
   }
 
   render() {
