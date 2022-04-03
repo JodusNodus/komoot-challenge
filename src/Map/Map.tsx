@@ -1,26 +1,29 @@
 import debounce from "lodash.debounce";
 import React from "react";
-import { MapBox, TViewPort } from "./MapBox";
+import { MapBox } from "./MapBox";
 import { RouteLayer } from "./RouteLayer";
 import { TileLayer } from "./TileLayer";
 import { xyToLatLngOG } from "./utils";
 import { useRouteData } from "./RouteDataContext";
+import { TViewport } from "./types";
 
 export function Map() {
-  const [viewPort, setViewPort] = React.useState<TViewPort>();
+  const [viewport, setViewport] = React.useState<TViewport>();
   const { setPoints } = useRouteData();
+  const routeLayerRef = React.useRef<RouteLayer>(null);
 
-  const handleViewPortChange = React.useCallback(
-    debounce(
-      (viewport: TViewPort) =>
-        window.requestAnimationFrame(() => setViewPort(viewport)),
-      50
-    ),
+  const setViewportDebounced = React.useCallback(
+    debounce((viewport: TViewport) => setViewport(viewport), 50),
     []
   );
 
+  const handleViewportChange = React.useCallback((viewport: TViewport) => {
+    routeLayerRef.current?.drawRoute(viewport);
+    setViewportDebounced(viewport);
+  }, []);
+
   const handleClick = React.useCallback(
-    (x: number, y: number, viewport: TViewPort) => {
+    (x: number, y: number, viewport: TViewport) => {
       setPoints((points) =>
         points.concat([xyToLatLngOG(x, y, viewport.mapSize)])
       );
@@ -30,10 +33,10 @@ export function Map() {
 
   return (
     <>
-      <MapBox onViewPortChange={handleViewPortChange} onClick={handleClick}>
-        {viewPort && <TileLayer viewPort={viewPort} />}
+      <MapBox onViewportChange={handleViewportChange} onClick={handleClick}>
+        {viewport && <TileLayer viewport={viewport} />}
       </MapBox>
-      {viewPort && <RouteLayer viewPort={viewPort} />}
+      {viewport && <RouteLayer ref={routeLayerRef} viewport={viewport} />}
     </>
   );
 }

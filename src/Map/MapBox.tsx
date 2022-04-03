@@ -1,21 +1,13 @@
 import debounce from "lodash.debounce";
 import React, { MouseEventHandler, WheelEventHandler } from "react";
 import styled from "styled-components";
+import { TViewport } from "./types";
 import { bound } from "./utils";
 
 type TProps = {
-  onViewPortChange: (viewport: TViewPort) => void;
-  onClick: (x: number, y: number, viewport: TViewPort) => void;
+  onViewportChange: (viewport: TViewport) => void;
+  onClick: (x: number, y: number, viewport: TViewport) => void;
   children?: React.ReactNode;
-};
-
-export type TViewPort = {
-  x: number;
-  y: number;
-  height: number;
-  width: number;
-  mapSize: number;
-  scale: number;
 };
 
 const MIN_SCALE = 0.01;
@@ -36,7 +28,7 @@ export class MapBox extends React.PureComponent<TProps> {
   };
 
   // Part of map that is visible to user
-  private viewPort?: TViewPort;
+  private viewport?: TViewport;
 
   private wrapRef = React.createRef<HTMLDivElement>();
 
@@ -93,24 +85,24 @@ export class MapBox extends React.PureComponent<TProps> {
       ])
     );
 
-    const viewPortX = Math.max(-rect.x, 0);
-    const viewPortY = Math.max(-rect.y, 0);
+    const viewportX = Math.max(-rect.x, 0);
+    const viewportY = Math.max(-rect.y, 0);
 
-    const viewPortHeight =
+    const viewportHeight =
       Math.min(rect.bottom, window.innerHeight / scale) - Math.max(rect.y, 0);
-    const viewPortWidth =
+    const viewportWidth =
       Math.min(rect.right, window.innerWidth / scale) - Math.max(rect.x, 0);
 
-    this.viewPort = {
-      x: viewPortX,
-      y: viewPortY,
-      height: viewPortHeight,
-      width: viewPortWidth,
+    this.viewport = {
+      x: viewportX,
+      y: viewportY,
+      height: viewportHeight,
+      width: viewportWidth,
       mapSize: MAP_SIZE,
       scale,
     };
 
-    this.props.onViewPortChange(this.viewPort);
+    this.props.onViewportChange(this.viewport);
   };
 
   private onDragStart: MouseEventHandler = () => {
@@ -118,11 +110,11 @@ export class MapBox extends React.PureComponent<TProps> {
   };
 
   private onClick: MouseEventHandler = (event) => {
-    if (this.viewPort) {
-      const inverseScale = 1 / this.viewPort.scale;
+    if (this.viewport) {
+      const inverseScale = 1 / this.viewport.scale;
       const x = (event.clientX - this.transforms.x) * inverseScale;
       const y = (event.clientY - this.transforms.y) * inverseScale;
-      this.props.onClick(x, y, this.viewPort);
+      this.props.onClick(x, y, this.viewport);
     }
   };
 
@@ -201,6 +193,5 @@ const MovableBox = styled.div`
   position: absolute;
   cursor: grab;
   transform-origin: 0 0;
-  background-color: lightgrey;
-  border: 1px solid gray;
+  background-color: #edf0d5;
 `;

@@ -30,12 +30,6 @@ export function latLngToXy(
   return [x, y];
 }
 
-export function distanceBetweenPoints(p1: TPoint, p2: TPoint) {
-  let x = p2[0] - p1[0];
-  let y = p2[1] - p1[1];
-  return Math.sqrt(y * y + x * x);
-}
-
 export function pointIndexToLabel(index: number, totalPoints: number) {
   let label = index.toString();
   if (index === 0) {

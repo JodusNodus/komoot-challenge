@@ -1,72 +1,83 @@
 import React from "react";
 import styled from "styled-components";
-import { TViewPort } from "./MapBox";
-import { useRouteData } from "./RouteDataContext";
-import { TPoint } from "./types";
-import { distanceBetweenPoints, latLngToXy, pointIndexToLabel } from "./utils";
+import { RouteDataContext } from "./RouteDataContext";
+import { TPoint, TViewport } from "./types";
+import { latLngToXy, pointIndexToLabel } from "./utils";
 
-const POINT_RADIUS = 12;
+type TProps = { viewport: TViewport };
 
-type TPointWithIndex = { point: TPoint; index: number };
+export class RouteLayer extends React.PureComponent<TProps> {
+  private canvasRef = React.createRef<HTMLCanvasElement>();
 
-export function RouteLayer({ viewPort }: { viewPort: TViewPort }) {
-  const { points } = useRouteData();
-  const canvasRef = React.useRef<HTMLCanvasElement>(null);
+  static contextType = RouteDataContext;
+  context!: React.ContextType<typeof RouteDataContext>;
 
-  const render = () => {
-    if (!canvasRef.current) return;
-    const ctx = canvasRef.current.getContext("2d");
-    if (!ctx) return;
-    ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
-    if (!points.length) return;
+  public drawRoute = (viewport: TViewport) =>
+    window.requestAnimationFrame(() => {
+      const { points } = this.context;
+      const canvas = this.canvasRef.current;
+      if (!canvas) return;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) return;
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      if (!points.length) return;
 
-    const projectedPoints = points.map(([lat, lng]: TPoint) => {
-      let [x, y] = latLngToXy(lat, lng, viewPort.mapSize * viewPort.scale);
-      x = x - viewPort.x * viewPort.scale;
-      y = y - viewPort.y * viewPort.scale;
-      return [x, y] as TPoint;
-    });
-
-    drawLine(ctx, projectedPoints);
-
-    let simplifiedPoints = projectedPoints.reduce((acc, point, index) => {
-      if (index === 0) return [{ point, index }];
-      if (
-        distanceBetweenPoints(point, acc[acc.length - 1].point) >
-        POINT_RADIUS * 4
-      ) {
-        return [...acc, { point, index }];
-      } else {
-        return acc;
-      }
-    }, [] as TPointWithIndex[]);
-    // Always keep firsts and last point in simplified points
-    simplifiedPoints = simplifiedPoints
-      .slice(0, simplifiedPoints.length - 1)
-      .concat({
-        index: projectedPoints.length - 1,
-        point: projectedPoints[projectedPoints.length - 1],
+      // Project coordinates onto map
+      const projectedPoints = points.map(([lat, lng]: TPoint) => {
+        let [x, y] = latLngToXy(lat, lng, viewport.mapSize * viewport.scale);
+        x = x - viewport.x * viewport.scale;
+        y = y - viewport.y * viewport.scale;
+        return [x, y] as TPoint;
       });
 
-    for (const {
-      index,
-      point: [x, y],
-    } of simplifiedPoints) {
-      drawPoint(ctx, x, y, pointIndexToLabel(index, projectedPoints.length));
-    }
-  };
+      drawLine(ctx, projectedPoints);
 
-  React.useEffect(() => {
-    window.requestAnimationFrame(render);
-  }, [canvasRef.current, viewPort, points]);
+      const pointsWidthIndex = projectedPoints.map((point, index) => ({
+        point,
+        index,
+      }));
 
-  return (
-    <Canvas
-      ref={canvasRef}
-      height={window.innerHeight}
-      width={window.innerWidth}
-    />
-  );
+      for (const {
+        index,
+        point: [x, y],
+      } of pointsWidthIndex.reverse()) {
+        if (index === 0 || index === pointsWidthIndex.length - 1) {
+          drawPoint(
+            ctx,
+            x,
+            y,
+            pointIndexToLabel(index, projectedPoints.length)
+          );
+        } else if (viewport.scale > 8) {
+          drawPoint(
+            ctx,
+            x,
+            y,
+            pointIndexToLabel(index, projectedPoints.length)
+          );
+        } else if (viewport.scale > 3) {
+          drawSmallPoint(ctx, x, y);
+        }
+      }
+    });
+
+  componentDidUpdate() {
+    this.drawRoute(this.props.viewport);
+  }
+
+  componentDidMount() {
+    this.drawRoute(this.props.viewport);
+  }
+
+  render() {
+    return (
+      <Canvas
+        ref={this.canvasRef}
+        height={window.innerHeight}
+        width={window.innerWidth}
+      />
+    );
+  }
 }
 
 const Canvas = styled.canvas`
@@ -83,15 +94,24 @@ function drawPoint(
   label: string
 ) {
   ctx.beginPath();
-  ctx.arc(x, y, POINT_RADIUS, 0, 2 * Math.PI, false);
+  const radius = 12;
+  ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
   ctx.fillStyle = "#383838";
   ctx.fill();
 
-  ctx.font = `bold ${POINT_RADIUS}px sans-serif`;
+  ctx.font = `bold ${radius}px sans-serif`;
   ctx.fillStyle = "white";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x, y);
+}
+
+function drawSmallPoint(ctx: CanvasRenderingContext2D, x: number, y: number) {
+  ctx.beginPath();
+  const radius = 6;
+  ctx.arc(x, y, radius, 0, 2 * Math.PI, false);
+  ctx.fillStyle = "#383838";
+  ctx.fill();
 }
 
 function drawLine(ctx: CanvasRenderingContext2D, points: TPoint[]) {
