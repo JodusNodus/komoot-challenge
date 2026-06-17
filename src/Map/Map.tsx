@@ -12,15 +12,15 @@ export function Map() {
   const { setPoints } = useRouteData();
   const routeLayerRef = React.useRef<RouteLayer>(null);
 
-  const setViewportDebounced = React.useCallback(
-    debounce((viewport: TViewport) => setViewport(viewport), 50),
+  const setViewportDebounced = React.useMemo(
+    () => debounce((viewport: TViewport) => setViewport(viewport), 50),
     []
   );
 
   const handleViewportChange = React.useCallback((viewport: TViewport) => {
     routeLayerRef.current?.drawRoute(viewport);
     setViewportDebounced(viewport);
-  }, []);
+  }, [setViewportDebounced]);
 
   const handleClick = React.useCallback(
     (x: number, y: number, viewport: TViewport) => {
@@ -28,7 +28,7 @@ export function Map() {
         points.concat([xyToLatLngOG(x, y, viewport.mapSize)])
       );
     },
-    []
+    [setPoints]
   );
 
   return (
